@@ -392,6 +392,125 @@ Would you pay winners automatically, or let them claim manually? Why?
 --------------------------------------
 Unchecked external calls
 --------------------------------------
+Alright, let's dive into **Unchecked External Calls** in Solidity.  
+I'll explain it from beginner to advanced, nice and clear. 🧠✨
+
+---
+
+## 🌟 What Are External Calls in Solidity?
+
+In Solidity, when your smart contract **calls** another **external** address (whether a user wallet or another contract), you are doing an **external call**.
+
+You can make an external call using:
+- `.transfer()`
+- `.send()`
+- `.call()`
+
+Example:
+```solidity
+(bool success, ) = otherContractAddress.call{value: 1 ether}("");
+require(success, "Transfer failed");
+```
+
+---
+
+## ⚡ What Is an *Unchecked* External Call?
+
+An **unchecked external call** means:
+
+- You call another address or contract.
+- You **don't** check if the call **succeeded** or **failed**.
+- You **continue execution** regardless of what happened.
+
+🚨 **Danger:** If the external call fails and you don't check, your contract may behave incorrectly, lose funds, or be vulnerable to attack.
+
+Example of a BAD unchecked call:
+```solidity
+recipient.call{value: amount}(""); // ❌ No success check
+```
+
+This code **does not check** if `call` returned `true` (success) or `false` (fail)!  
+So even if sending money fails, your contract **thinks everything is fine** and keeps going.
+
+---
+
+## 📛 Why Is This Dangerous?
+
+- **Fund loss:** You might think you've paid someone, but payment failed.
+- **Logic break:** You may update important state based on a failed action.
+- **Attack surface:** Attackers can exploit this to **mess up your contract's behavior**.
+
+---
+
+## ✅ How to Handle External Calls Safely
+
+👉 Always **check the success** of an external call!
+
+Safe way:
+```solidity
+(bool success, ) = recipient.call{value: amount}("");
+require(success, "ETH transfer failed");
+```
+
+- If sending ETH fails, `require` will revert the transaction.
+- Your contract won't continue execution with bad assumptions.
+
+---
+
+## 🧠 Real-World Problems from Unchecked External Calls
+
+1. **DAO Hack (2016)** — unchecked external behavior contributed to the massive DAO exploit.
+2. **Auction Contracts:** Like you learned earlier — if refunding ETH to a bidder fails and isn't handled properly, it **freezes the auction** forever!
+
+---
+
+## 🔥 Advanced Techniques: Pull Payments
+
+Instead of sending ETH immediately (risky), a **more advanced and safer** pattern is:
+- Record the amount **owed** to a user.
+- Let the user **withdraw** it themselves.
+
+Example:
+```solidity
+mapping(address => uint) public pendingWithdrawals;
+
+function bid() public payable {
+    require(msg.value > highestBid, "Bid too low");
+
+    if (highestBidder != address(0)) {
+        pendingWithdrawals[highestBidder] += highestBid;
+    }
+
+    highestBid = msg.value;
+    highestBidder = msg.sender;
+}
+
+function withdraw() public {
+    uint amount = pendingWithdrawals[msg.sender];
+    require(amount > 0, "Nothing to withdraw");
+
+    pendingWithdrawals[msg.sender] = 0;
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success, "Withdraw failed");
+}
+```
+
+✅ This pattern **protects** your contract from external call failures.
+
+---
+
+## 🧩 Summary
+
+| Concept                | Safe? | Notes                                    |
+|-------------------------|-------|-----------------------------------------|
+| `.transfer()`           | ✅    | Safe but has 2300 gas limit.             |
+| `.send()`               | 🚫    | You must manually check success.         |
+| `.call{value:}`          | ✅    | Safe IF you manually check success.      |
+| Unchecked external call | 🚫    | Very dangerous! Never skip success checks. |
+| Pull Payment pattern    | ✅✅   | Very safe. Recommended for ETH refunds.  |
+
+---
+
 
 ## SUBJECT
 --------------------------------------

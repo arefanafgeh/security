@@ -21,7 +21,7 @@ contract dos {
     mapping(address=>uint) withdrawbox;
      function fixGreifing() public{
         for(uint i=0;i<winnerscount;i++){
-            withdrawbox[winners[i]] = winnersPrizes[winners[i]];
+            withdrawbox[winners[i]] += winnersPrizes[winners[i]];
             delete winnersPrizes[winners[i]];
             delete winners[i];
         }
@@ -29,7 +29,8 @@ contract dos {
      function withdraw() public {
         uint amount = withdrawbox[msg.sender];
         withdrawbox[msg.sender] = 0;
-        payable(msg.sender).transfer(amount);
+        (bool success , ) = address(msg.sender).call{value:amount}("");
+        require(success, "Withdraw failed");
      }
 
 
@@ -46,4 +47,15 @@ contract dos {
         highestbidder = msg.sender;
         highestbid = msg.value;
      }
+
+
+     function fixbiddinghalts() public{
+        require(msg.value>highestbid ,"Must bid higher");
+        if(highestbidder!=address(0)){
+            withdrawbox[highestbidder] += highestbid;
+        }
+        highestbidder = msg.sender;
+        highestbid = msg.value;
+     }
+     
 }
