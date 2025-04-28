@@ -17,4 +17,18 @@ contract dos {
             address(winners[i]).call{value:winnersPrizes[winners[i]]}("");
         }
      }
+
+    mapping(address=>uint) withdrawbox;
+     function fixGreifing() public{
+        for(uint i=0;i<winnerscount;i++){
+            withdrawbox[winners[i]] = winnersPrizes[winners[i]];
+            delete winnersPrizes[winners[i]];
+            delete winners[i];
+        }
+     }
+     function withdraw() public {
+        uint amount = withdrawbox[msg.sender];
+        withdrawbox[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+     }
 }
