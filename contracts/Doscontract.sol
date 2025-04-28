@@ -31,4 +31,19 @@ contract dos {
         withdrawbox[msg.sender] = 0;
         payable(msg.sender).transfer(amount);
      }
+
+
+        address highestbidder;
+        uint highestbid = 0;
+        /**
+        If old highest bidder is a contract that refuses the payment through a fallback function , 
+        then the whole method reverts and no one ever can place a higher bid */
+     function biddingthathalts() public{
+        require(msg.value>highestbid ,"Must bid higher");
+        if(highestbidder!=address(0)){
+            address(highestbidder).transfer(value:highestbid);
+        }
+        highestbidder = msg.sender;
+        highestbid = msg.value;
+     }
 }
